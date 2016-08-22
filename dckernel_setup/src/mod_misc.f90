@@ -37,6 +37,7 @@ module mod_misc
 
   public :: ADM_proc_stop
 
+  public :: CONST_setup
   public :: GRD_setup
   public :: GRD_input_vgrid
 
@@ -391,6 +392,21 @@ contains
     stop
 
   end subroutine ADM_proc_stop
+
+  !-----------------------------------------------------------------------------
+  subroutine CONST_setup
+    implicit none
+
+    write(ADM_LOG_FID,*) '*** setup constants'
+
+    PI  = 4.E0_RP * atan( 1.0_RP )
+    EPS = epsilon(0.0_RP)
+
+    write(ADM_LOG_FID,*) '*** PI  = ', PI
+    write(ADM_LOG_FID,*) '*** EPS = ', EPS
+
+    return
+  end subroutine CONST_setup
 
   !-----------------------------------------------------------------------------
   subroutine GRD_setup

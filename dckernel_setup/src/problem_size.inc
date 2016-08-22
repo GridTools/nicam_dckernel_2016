@@ -57,9 +57,9 @@
   logical,  public            :: ADM_have_sgp(1) = .true. ! region have singlar point?
 
   !--- constant parameters
-  real(RP), public            :: PI    = 3.14159265358979_RP !< pi
-  real(RP), public            :: EPS   = 1.E-16_RP           !< small number
-  real(RP), public            :: GRAV  = 9.80616_RP  ! Gravitational accerlaration of the Earth [m/s2]
+  real(RP), public            :: PI    = 3.141592653589793_RP     !< pi
+  real(RP), public            :: EPS   = 2.220446049250313E-16_RP !< small number
+  real(RP), public            :: GRAV  = 9.80616_RP   ! Gravitational accerlaration of the Earth [m/s2]
   real(RP), public            :: Rdry  =   287.0_RP   ! Gas constant of air
   real(RP), public            :: CVdry =   717.5_RP   ! Specific heat of air (consant volume)
   integer,  public            :: NON_HYDRO_ALPHA = 1 ! Nonhydrostatic/hydrostatic flag
