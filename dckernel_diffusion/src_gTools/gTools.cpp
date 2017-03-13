@@ -32,7 +32,9 @@ using gridtools::plus_;
 struct flux_function {
 
   // vt --> [I, J, D, T]
-  typedef accessor<0, enumtype::inout, extent<>, 5 > vt;
+// Enabling the IJ caches would required here to pass the right extent... however a bug is currently preventing this
+//  typedef accessor<0, enumtype::inout, extent<>, 5 > vt;
+  typedef accessor<0, enumtype::inout, extent<0,0,0,0,0,0,0,3,0,1>, 5 > vt;
   // scl --> [I, J, K]+[L]
   typedef accessor<1, enumtype::in, extent<0, 1, 0, 1> > scl;
   // coef_intp   [I, J, A, D, T]+[L]
@@ -173,7 +175,9 @@ struct consume_function {
 int main(int argc, char const *argv[])
 {
 
+    std::cout << "Running benchmark for " << ADM_iall << " " << ADM_jall << " " << ADM_kall << std::endl;
     using namespace enumtype;
+    bool read_from_dump = false;
     clock_t start, end;
 
     // [layout_map]
@@ -235,83 +239,103 @@ int main(int argc, char const *argv[])
     // consume functor
     field <storage_type_3d_K_kh,ADM_lall>::type       kh(metadata_3d_k_kh, 0.0, "kh");
     field <storage_type_3d_K,ADM_lall>::type          dscl(metadata_3d_k, 0.0, "dscl");
+    field <storage_type_3d_K,ADM_lall>::type          dscl_ref(metadata_3d_k, 0.0, "dscl");
     field <storage_type_4d_coef_diff,ADM_lall>::type  coef_diff(metadata_4d_coef_diff, 0.0, "coef_diff");
 
     // Use following To fill "scl" up the values from dumpio.c
 
 
+    void *ORG_dscl;
+    void *ORG_scl;
+    void *ORG_kh;
+    void *ORG_coef_intp;
+    void *ORG_coef_diff;
+
+    if(read_from_dump) {
     // ########< read input data >######## //
     // set intial values using dumpio
-  void *ORG_dscl      =  malloc( (ADM_iall*ADM_jall*ADM_kall*ADM_lall) * sizeof(float_type));
-  //float_type *ORG_dscl_pl      =  malloc( (ADM_gall_pl*ADM_kall*ADM_lall_pl) * sizeof(ORG_dscl_pl[0]));
-  void *ORG_scl       =  malloc( (ADM_iall*ADM_jall*ADM_kall*ADM_lall) * sizeof(float_type));
-  //float_type *ORG_scl_pl       =  malloc( (ADM_gall_pl*ADM_kall*ADM_lall_pl) * sizeof(ORG_scl_pl[0]));
-  void *ORG_kh        =  malloc( (ADM_iall*ADM_jall*ADM_kall*ADM_lall) * sizeof(float_type));
-  //float_type *ORG_kh_pl        =  malloc( (ADM_gall_pl*ADM_kall*ADM_lall_pl) * sizeof(ORG_kh_pl[0]));
-  void *ORG_coef_intp =  malloc( (ADM_iall*ADM_jall*3*ADM_nxyz*TJ*ADM_lall) * sizeof(float_type));
-  //float_type *ORG_coef_intp_pl =  malloc( (ADM_gall_pl*3*ADM_nxyz*ADM_lall_pl) * sizeof(ORG_coef_intp_pl[0]));
-  void *ORG_coef_diff =  malloc( (ADM_iall*ADM_jall*6*ADM_nxyz*ADM_lall) * sizeof(float_type));
-  //float_type *ORG_coef_diff_pl =  malloc( (ADM_vlink*ADM_nxyz*ADM_lall_pl) * sizeof(ORG_coef_diff_pl[0]));
+        ORG_dscl      =  malloc( (ADM_iall*ADM_jall*ADM_kall*ADM_lall) * sizeof(float_type));
+        ORG_scl       =  malloc( (ADM_iall*ADM_jall*ADM_kall*ADM_lall) * sizeof(float_type));
+        ORG_kh        =  malloc( (ADM_iall*ADM_jall*ADM_kall*ADM_lall) * sizeof(float_type));
+        ORG_coef_intp =  malloc( (ADM_iall*ADM_jall*3*ADM_nxyz*TJ*ADM_lall) * sizeof(float_type));
+        ORG_coef_diff =  malloc( (ADM_iall*ADM_jall*6*ADM_nxyz*ADM_lall) * sizeof(float_type));
 
-  int32_t EX_fid;
-  char    *EX_fname = (char*) malloc(1024 * sizeof(char));
-  // IO_FREAD = fread mode
-  int32_t IO_FREAD = 0;
-  dumpio_syscheck();
-  dumpio_mk_fname(EX_fname,"snapshot.dc_diffusion","pe",SET_prc_me-1,6);
-  dumpio_fopen(EX_fname,EX_fid);
-  dumpio_read_data( EX_fid, ADM_iall*ADM_jall*ADM_kall*ADM_lall   ,     ORG_dscl);
-  //dumpio_read_data( &EX_fid, ADM_gall_pl      *ADM_kall*ADM_lall_pl,     ORG_dscl_pl);
-  dumpio_read_data( EX_fid, ADM_iall*ADM_jall*ADM_kall*ADM_lall   ,     ORG_scl);
-  //dumpio_read_data( &EX_fid, ADM_gall_pl      *ADM_kall*ADM_lall_pl,     ORG_scl_pl);
-  dumpio_read_data( EX_fid, ADM_iall*ADM_jall*ADM_kall*ADM_lall   ,     ORG_kh);
-  //dumpio_read_data( &EX_fid, ADM_gall_pl      *ADM_kall*ADM_lall_pl,     ORG_kh_pl);
-  dumpio_read_data( EX_fid, ADM_iall*ADM_jall*3*ADM_nxyz*2*ADM_lall   , ORG_coef_intp);
-  //dumpio_read_data( &EX_fid, ADM_gall_pl      *3*ADM_nxyz*  ADM_lall_pl, ORG_coef_intp_pl);
-  dumpio_read_data( EX_fid, ADM_iall*ADM_jall*6*ADM_nxyz*  ADM_lall   , ORG_coef_diff);
-  //dumpio_read_data( &EX_fid,           ADM_vlink*ADM_nxyz*  ADM_lall_pl, ORG_coef_diff_pl);
+        int32_t EX_fid;
+        char    *EX_fname = (char*) malloc(1024 * sizeof(char));
+        // IO_FREAD = fread mode
+        int32_t IO_FREAD = 0;
+        dumpio_syscheck();
+        dumpio_mk_fname(EX_fname,"snapshot.dc_diffusion","pe",SET_prc_me-1,6);
+        dumpio_fopen(EX_fname,EX_fid);
+        dumpio_read_data( EX_fid, ADM_iall*ADM_jall*ADM_kall*ADM_lall   ,     ORG_dscl);
+        dumpio_read_data( EX_fid, ADM_iall*ADM_jall*ADM_kall*ADM_lall   ,     ORG_scl);
+        dumpio_read_data( EX_fid, ADM_iall*ADM_jall*ADM_kall*ADM_lall   ,     ORG_kh);
+        dumpio_read_data( EX_fid, ADM_iall*ADM_jall*3*ADM_nxyz*2*ADM_lall   , ORG_coef_intp);
+        dumpio_read_data( EX_fid, ADM_iall*ADM_jall*6*ADM_nxyz*  ADM_lall   , ORG_coef_diff);
+    }
 
-  // can a storage type be assigned a value from an array??
-  // example: scl = ORG_scl
+    double dx = 1/(double)ADM_iall;
+    double dy = 1/(double)ADM_jall;
 
   for(int l=0; l<ADM_lall; ++l) // how to retrieve the l dimension??
   {
-   for(int i=0; i<metadata_3d_k.dim<0>(); ++i)
-    for(int j=0; j<metadata_3d_k.dim<1>(); ++j)
-      for(int k=0; k<metadata_3d_k.dim<2>(); ++k)
-      {
-        scl.get_value<0>(i,j,k)= *(float_type*)((ORG_scl + index4D(i,j,k,l)));
-        dscl.get_value<0>(i,j,k)=*(float_type*)((ORG_dscl + index4D(i,j,k,l)));
-      }
-   for(int i=0; i<metadata_4d_coef_diff.dim<0>(); ++i)
-    for(int j=0; j<metadata_4d_coef_diff.dim<1>(); ++j)
-    {
+    for(int i=0; i<ADM_iall; ++i) {
+      for(int j=0; j<ADM_jall; ++j) {
+        double x = dx * (double)(i);
+        double y = dy * (double)(j);
+
+        for(int k=0; k<metadata_3d_k.dim<2>(); ++k)
+        {
+            if(read_from_dump) {
+                scl.get_value<0>(i,j,k)= *(float_type*)((ORG_scl + index4D(i,j,k,l)));
+                dscl.get_value<0>(i,j,k)=*(float_type*)((ORG_dscl + index4D(i,j,k,l)));
+            }
+            else {
+                scl.get_value<0>(i,j,k)= 2.4 + 7.6 * (k / (double)ADM_kall + cos(PI * (x + 2.5 * y)) + sin(4 * PI * (x + 1.5 * y))) / 4.;
+            }
+        }
       // note: for coef_diff dims<2> is killed (i.e. no K dimension)
-      for(int c=0; c<metadata_4d_coef_diff.dim<3>(); ++c)
-        for(int d=0; d<metadata_4d_coef_diff.dim<4>(); ++d)
-          coef_diff.get_value<0>(i,j,1,c,d)=* (float_type*)((ORG_coef_diff + index5D(i,j,c,d,l)));
+        for(int c=0; c<metadata_4d_coef_diff.dim<3>(); ++c)
+          for(int d=0; d<metadata_4d_coef_diff.dim<4>(); ++d)
+          {
+            if(read_from_dump) {
+              coef_diff.get_value<0>(i,j,1,c,d)=* (float_type*)((ORG_coef_diff + index5D(i,j,c,d,l)));
+            }
+            else{
+              coef_diff.get_value<0>(i,j,1,c,d)=2.2 + 5.5 * (c / 6.0 + d / 3. + cos(PI * (x + 2.5 * y)) + sin(1.2 * PI * (x + 1.5 * y))) / 4.;
+            }
+          }
       // note: for coef_intp dims<2> is killed (i.e. no K dimension)
-      for(int a=0; a<metadata_5d.dim<3>(); ++a)
-         for(int d=0; d<metadata_5d.dim<4>(); ++d)
+        for(int a=0; a<metadata_5d.dim<3>(); ++a)
+          for(int d=0; d<metadata_5d.dim<4>(); ++d)
             for(int t=0; t<metadata_5d.dim<5>(); ++t)
-              coef_intp.get_value<0>(i,j,1,a,d,t)=* (float_type*)((ORG_coef_intp + index6D(i,j,a,d,t,l)));
+            {
+                if(read_from_dump) {
+                    coef_intp.get_value<0>(i,j,1,a,d,t)=* (float_type*)((ORG_coef_intp + index6D(i,j,a,d,t,l)));
+                }
+                else {
+                    coef_intp.get_value<0>(i,j,1,a,d,t)=3. + 2.5 * (a / 3.0 + d / 3. + t/2.0 + cos(PI * (x + 2.5 * y)) + sin(2 * PI * (x + 3.5 * y))) / 4.;
+                }
+            }
+        for(int k=0; k<metadata_3d_k_kh.dim<2>(); ++k) {
+            if(read_from_dump) {
+                kh.get_value<0>(i,j,k)=* (float_type*)((ORG_kh + index4D(i,j,k,l)));
+            }
+            else {
+                kh.get_value<0>(i,j,k)=3. + 2.5 * (k / (double)ADM_kall + cos(PI * (x + 2.5 * y)) + sin(2 * PI * (x + 3.5 * y))) / 4.;
+            }
+        }
+      }
     }
-    for(int i=0; i<metadata_3d_k_kh.dim<0>(); ++i)
-       for(int j=0; j<metadata_3d_k_kh.dim<1>(); ++j)
-        for(int k=0; k<metadata_3d_k_kh.dim<2>(); ++k)
-          kh.get_value<0>(i,j,k)=* (float_type*)((ORG_kh + index4D(i,j,k,l)));
   }  // l loop
 
+    if(read_from_dump) {
   free(ORG_dscl);
-  //free(ORG_dscl_pl);
   free(ORG_scl);
-  //free(ORG_scl_pl);
   free(ORG_kh);
-  //free(ORG_kh_pl);
   free(ORG_coef_intp);
-  //free(ORG_coef_intp_pl);
   free(ORG_coef_diff);
-  //free(ORG_coef_diff_pl);
+    }
   //###############################################################################
 
     //scl.print();
@@ -349,7 +373,8 @@ int main(int argc, char const *argv[])
          make_multistage
          (
           execute<forward>(), // parallel means no vertical dependency, forward from 0 to K-1, otherwise it is backward
-          define_caches(cache< IJ, local >(p_vt())),
+// This caches are not working at the moment in the multidimensional fields
+//          define_caches(cache< IJ, local >(p_vt())),
           make_stage<flux_function>(p_vt(), p_scl(), p_coef_intp() ),//define in same order as accessors unique identifier
           make_stage<consume_function>(p_dscl(), p_vt(), p_coef_diff(), p_kh())// in case of several DO functions due to dependinceis, add make_stage for each functor
           )
@@ -368,7 +393,10 @@ int main(int argc, char const *argv[])
     }
     end = clock();
     float time1 = ((float)(end-start))/CLOCKS_PER_SEC;
-    printf("Runtime: %f", time1);
+    printf("Runtime: %f\n", time1);
+
+
+    std::cout << "GridTools meters : " << diffusion->get_meter() << std::endl;
 
     // run boundary condition
     //gridtools::array<gridtools::halo_descriptor, 3> halos;
