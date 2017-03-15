@@ -1,3 +1,4 @@
+
 #define PEDANTIC_DISABLED
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,6 +55,7 @@ struct flux_function {
         dimension<3>::Index a;
         dimension<4>::Index t;
         dimension<4>::Index d_coef_intp;
+        dimension<5>::Index t_coef_intp;
         
 
         
@@ -73,12 +75,12 @@ struct flux_function {
         eval(vt{t+1}) =   (( + 2.0 * eval(coef_intp{t+1}) 
                              - 1.0 * eval(coef_intp{a+1,t+1}) 
                              - 1.0 * eval(coef_intp{a+2,t+1})  ) * eval(scl{}) 
-                         + ( - 1.0 * eval(coef_intp{t+1})
-                             + 2.0 * eval(coef_intp{a+1,t+1})
-                             - 1.0 * eval(coef_intp{a+2,t+1}) ) * eval(scl{i+1,j+1}) //i+1,j+1}) 
-                         + ( - 1.0 * eval(coef_intp{t+1})
-                             - 1.0 * eval(coef_intp{a+1,t+1})
-                             + 2.0 * eval(coef_intp{a+2,t+1}) ) * eval(scl{j+1}) //j+1}) 
+                         + ( - 1.0 * eval(coef_intp{t_coef_intp+1})
+                             + 2.0 * eval(coef_intp{a+1,t_coef_intp+1})
+                             - 1.0 * eval(coef_intp{a+2,t_coef_intp+1}) ) * eval(scl{i+1,j+1}) //i+1,j+1}) 
+                         + ( - 1.0 * eval(coef_intp{t_coef_intp+1})
+                             - 1.0 * eval(coef_intp{a+1,t_coef_intp+1})
+                             + 2.0 * eval(coef_intp{a+2,t_coef_intp+1}) ) * eval(scl{j+1}) //j+1}) 
                          ) / 3.0;  
 
     }
@@ -111,10 +113,11 @@ struct consume_function_1 {
         dimension<3>::Index c; // would be set to 1
         dimension<3>::Index d;
         dimension<4>::Index t;
+        dimension<4>::Index d_coef_diff;
         
         eval(dscl{}) = ( eval(coef_diff{})    * ( eval(vt{})    + eval(vt{t+1})) 
-                       + eval(coef_diff{d+1}) * ( eval(vt{d+1}) + eval(vt{d+1,t+1})) 
-                       + eval(coef_diff{d+2}) * ( eval(vt{d+2}) + eval(vt{d+2,t+1})) 
+                       + eval(coef_diff{d_coef_diff+1}) * ( eval(vt{d+1}) + eval(vt{d+1,t+1})) 
+                       + eval(coef_diff{d_coef_diff+2}) * ( eval(vt{d+2}) + eval(vt{d+2,t+1})) 
                       ) * 0.5 * ( eval(kh{})  +   eval(kh{i+1,j+1}));
         
     }
@@ -147,10 +150,11 @@ struct consume_function_2 {
         dimension<3>::Index c; // would be set to 2
         dimension<3>::Index d;
         dimension<4>::Index t;
+        dimension<4>::Index d_coef_diff;
         
         eval(dscl{}) = ( eval(coef_diff{})    * ( eval(vt{t+1})     + eval(vt{i-1})) 
-                       + eval(coef_diff{d+1}) * ( eval(vt{d+1,t+1}) + eval(vt{i-1,d+1})) 
-                       + eval(coef_diff{d+2}) * ( eval(vt{d+2,t+1}) + eval(vt{i-1,d+2})) 
+                       + eval(coef_diff{d_coef_diff+1}) * ( eval(vt{d+1,t+1}) + eval(vt{i-1,d+1})) 
+                       + eval(coef_diff{d_coef_diff+2}) * ( eval(vt{d+2,t+1}) + eval(vt{i-1,d+2})) 
                       ) * 0.5 * ( eval(kh{})  +   eval(kh{j+1}));
         
     }
@@ -183,11 +187,12 @@ struct consume_function_3 {
         dimension<3>::Index c; // would be set to 3
         dimension<3>::Index d;
         dimension<4>::Index t;
+        dimension<4>::Index d_coef_diff;
         
         eval(dscl{}) = eval(dscl{}) +
                        ( eval(coef_diff{})    * ( eval(vt{i-1})      + eval(vt{i-1,j-1,t+1})) 
-                       + eval(coef_diff{d+1}) * ( eval(vt{i-1,d+1}) + eval(vt{i-1,j-1,d+1,t+1})) 
-                       + eval(coef_diff{d+2}) * ( eval(vt{i-1,d+2}) + eval(vt{i-1,j-1,d+2,t+1})) 
+                       + eval(coef_diff{d_coef_diff+1}) * ( eval(vt{i-1,d+1}) + eval(vt{i-1,j-1,d+1,t+1})) 
+                       + eval(coef_diff{d_coef_diff+2}) * ( eval(vt{i-1,d+2}) + eval(vt{i-1,j-1,d+2,t+1})) 
                       ) * 0.5 * ( eval(kh{i-1})  +   eval(kh{}));
         
     }
@@ -220,11 +225,12 @@ struct consume_function_4 {
         dimension<3>::Index c; // would be set to 4
         dimension<3>::Index d;
         dimension<4>::Index t;
+        dimension<4>::Index d_coef_diff;
         
         eval(dscl{}) = eval(dscl{}) +
                        ( eval(coef_diff{})    * ( eval(vt{i-1,j-1,t+1})      + eval(vt{i-1,j-1})) 
-                       + eval(coef_diff{d+1}) * ( eval(vt{i-1,j-1,d+1,t+1}) + eval(vt{i-1,j-1,d+1})) 
-                       + eval(coef_diff{d+2}) * ( eval(vt{i-1,j-1,d+2,t+1}) + eval(vt{i-1,j-1,d+2})) 
+                       + eval(coef_diff{d_coef_diff+1}) * ( eval(vt{i-1,j-1,d+1,t+1}) + eval(vt{i-1,j-1,d+1})) 
+                       + eval(coef_diff{d_coef_diff+2}) * ( eval(vt{i-1,j-1,d+2,t+1}) + eval(vt{i-1,j-1,d+2})) 
                       ) * 0.5 * ( eval(kh{i-1,j-1})  +   eval(kh{}));
         
     }
@@ -257,11 +263,12 @@ struct consume_function_5 {
         dimension<3>::Index c; // would be set to 5
         dimension<3>::Index d;
         dimension<4>::Index t;
+        dimension<4>::Index d_coef_diff;
         
         eval(dscl{}) = eval(dscl{}) +
                        ( eval(coef_diff{})    * ( eval(vt{i-1,j-1})      + eval(vt{j-1,t+1})) 
-                       + eval(coef_diff{d+1}) * ( eval(vt{i-1,j-1,d+1}) + eval(vt{j-1,d+1,t+1})) 
-                       + eval(coef_diff{d+2}) * ( eval(vt{i-1,j-1,d+2}) + eval(vt{j-1,d+2,t+1})) 
+                       + eval(coef_diff{d_coef_diff+1}) * ( eval(vt{i-1,j-1,d+1}) + eval(vt{j-1,d+1,t+1})) 
+                       + eval(coef_diff{d_coef_diff+2}) * ( eval(vt{i-1,j-1,d+2}) + eval(vt{j-1,d+2,t+1})) 
                       ) * 0.5 * ( eval(kh{j-1})  +   eval(kh{}));
         
     }
@@ -294,11 +301,12 @@ struct consume_function_6 {
         dimension<3>::Index c; // would be set to 6
         dimension<3>::Index d;
         dimension<4>::Index t;
+        dimension<4>::Index d_coef_diff;
         
         eval(dscl{}) = eval(dscl{}) +
                        ( eval(coef_diff{})    * ( eval(vt{j-1,t+1})      + eval(vt{})) 
-                       + eval(coef_diff{d+1}) * ( eval(vt{j-1,d+1,t+1}) + eval(vt{})) 
-                       + eval(coef_diff{d+2}) * ( eval(vt{j-1,d+2,t+1}) + eval(vt{})) 
+                       + eval(coef_diff{d_coef_diff+1}) * ( eval(vt{j-1,d+1,t+1}) + eval(vt{})) 
+                       + eval(coef_diff{d_coef_diff+2}) * ( eval(vt{j-1,d+2,t+1}) + eval(vt{})) 
                       ) * 0.5 * ( eval(kh{})  +   eval(kh{i+1}));
         
     }
@@ -374,13 +382,13 @@ int main(int argc, char const *argv[])
     //storage_info_3d_K_t         metadata_3d_k(ADM_iall+1,ADM_jall+1,ADM_kall);
     storage_info_3d_K_t         metadata_3d_k(ADM_iall,ADM_jall,ADM_kall);
     // coef_diff
-    storage_info_4d_coef_diff_t metadata_4d_coef_diff(ADM_iall,ADM_jall,1,6,ADM_nxyz);
+    storage_info_4d_coef_diff_t metadata_4d_coef_diff(ADM_iall,ADM_jall,6,ADM_nxyz);
     //storage_info_4d_coef_diff_t metadata_4d_coef_diff(ADM_iall,ADM_jall,1,6,ADM_nxyz);
     // vt  
     //storage_info_4d_t           metadata_4d(ADM_iall+1,ADM_jall+1,1,ADM_nxyz,TJ);
     storage_info_4d_t           metadata_4d(ADM_iall,ADM_jall,1,ADM_nxyz,TJ);
     // coef_intp
-    storage_info_5d_t           metadata_5d(ADM_iall,ADM_jall,1,3,ADM_nxyz,TJ);
+    storage_info_5d_t           metadata_5d(ADM_iall,ADM_jall,3,ADM_nxyz,TJ);
     //storage_info_5d_t           metadata_5d(ADM_iall,ADM_jall,1,3,ADM_nxyz,TJ);
     // kh
     //storage_info_3d_K_kh_t      metadata_3d_k_kh(ADM_iall+2,ADM_jall+2,ADM_kall);
@@ -398,7 +406,7 @@ int main(int argc, char const *argv[])
     
     // Use following To fill "scl" up the values from dumpio.c
     
-    
+    /*
     // ########< read input data >######## //
     // set intial values using dumpio
   void *ORG_dscl      =  malloc( (ADM_iall*ADM_jall*ADM_kall*ADM_lall) * sizeof(float_type));
@@ -419,6 +427,7 @@ int main(int argc, char const *argv[])
   dumpio_syscheck();
   dumpio_mk_fname(EX_fname,"snapshot.dc_diffusion","pe",SET_prc_me-1,6);
   dumpio_fopen(EX_fname,EX_fid);
+  // MUST READ ALL VALUES (INCLUDING _p ARRAYS)
   dumpio_read_data( EX_fid, ADM_iall*ADM_jall*ADM_kall*ADM_lall   ,     ORG_dscl);
   //dumpio_read_data( &EX_fid, ADM_gall_pl      *ADM_kall*ADM_lall_pl,     ORG_dscl_pl);
   dumpio_read_data( EX_fid, ADM_iall*ADM_jall*ADM_kall*ADM_lall   ,     ORG_scl);
@@ -429,7 +438,7 @@ int main(int argc, char const *argv[])
   //dumpio_read_data( &EX_fid, ADM_gall_pl      *3*ADM_nxyz*  ADM_lall_pl, ORG_coef_intp_pl);
   dumpio_read_data( EX_fid, ADM_iall*ADM_jall*6*ADM_nxyz*  ADM_lall   , ORG_coef_diff);
   //dumpio_read_data( &EX_fid,           ADM_vlink*ADM_nxyz*  ADM_lall_pl, ORG_coef_diff_pl);
-  
+  //dumpio_fclose(EX_fid);
   // can a storage type be assigned a value from an array??
   // example: scl = ORG_scl
 
@@ -472,8 +481,35 @@ int main(int argc, char const *argv[])
   free(ORG_coef_diff);
   //free(ORG_coef_diff_pl);
   //###############################################################################
-  
+  */
     //scl.print();
+  for(int l=0; l<ADM_lall; ++l) // how to retrieve the l dimension??
+  {
+   for(int i=0; i<metadata_3d_k.template dims<0>(); ++i)
+    for(int j=0; j<metadata_3d_k.template dims<1>(); ++j)
+      for(int k=0; k<metadata_3d_k.template dims<2>(); ++k)
+      {
+        scl.get_value<0>(i,j,k)= (i+j+k)/2.;
+        dscl.get_value<0>(i,j,k)=i+j+k;
+      }
+   for(int i=0; i<metadata_4d_coef_diff.template dims<0>(); ++i)
+    for(int j=0; j<metadata_4d_coef_diff.template dims<1>(); ++j)
+    {
+      // note: for coef_diff dims<2> is killed (i.e. no K dimension)
+      for(int c=0; c<metadata_4d_coef_diff.template dims<3>(); ++c)
+        for(int d=0; d<metadata_4d_coef_diff.template dims<4>(); ++d)      
+          coef_diff.get_value<0>(i,j,1,c,d)=(i+j+c+d)*2.;
+      // note: for coef_intp dims<2> is killed (i.e. no K dimension)
+      for(int a=0; a<metadata_5d.template dims<3>(); ++a)
+         for(int d=0; d<metadata_5d.template dims<4>(); ++d)      
+            for(int t=0; t<metadata_5d.template dims<5>(); ++t)      
+              coef_intp.get_value<0>(i,j,1,a,d,t)=(i+j+a+t)/2.;
+    }  
+    for(int i=0; i<metadata_3d_k_kh.template dims<0>(); ++i)
+       for(int j=0; j<metadata_3d_k_kh.template dims<1>(); ++j)
+        for(int k=0; k<metadata_3d_k_kh.template dims<2>(); ++k)
+          kh.get_value<0>(i,j,k)=(i+j+k)*2.;
+  }  // l loop
 
     // flux functor
     typedef arg<0, storage_type_4d>                                   p_vt;

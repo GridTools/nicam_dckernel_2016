@@ -1,0 +1,60 @@
+Diffusion benchmark
+
+	flux_1 functor
+	- rhogw_vm 	  [I, J, K]   		 	 
+	- C2WfactGz   [I, J, K, A] 	  [L] defined as data field
+	- rhogvx      [I, J, K] 	  [L] defined as data field
+	- rhogvy      [I, J, K] 	  [L] defined as data field
+	- rhogvz      [I, J, K] 	  [L] defined as data field
+	- RGAMH       [I, J, K] 	  [L] defined as data field	
+	- rhogw       [I, J, K] 	  [L] defined as data field
+	- RGSQRTH     [I, J, K] 	  [L] defined as data field	
+
+	flux_2 functor
+	- rhogvx_vm   [I, J]
+	- rhogvy_vm   [I, J]
+	- rhogvz_vm   [I, J]		 	 
+	- rhogvx   	  [I, J, K]	 	  [L] defined as data field
+	- rhogvy   	  [I, J, K]	 	  [L] defined as data field	
+	- rhogvz   	  [I, J, K]	 	  [L] defined as data field	
+	- RGAM   	  [I, J, K]	 	  [L] defined as data field	
+
+	flux_3 functor
+	- sclt  	  [I, J, T]   		 	 
+	- rhogw_vm 	  [I, J, K]   	
+	- GRD_rdgz 	  [K]   	
+	- coef_intp   [I, J, A, D, T] [L] defined as data field
+	- rhogvx_vm   [I, J]
+	- rhogvy_vm   [I, J]
+	- rhogvz_vm   [I, J]	
+
+	flux_4 functor
+	- ddivdx      [I, J, K] 	  [L] defined as data field
+	- ddivdy      [I, J, K] 	  [L] defined as data field
+	- ddivdz      [I, J, K] 	  [L] defined as data field	
+	- coef_diff   [I, J, C, D]	  [L] defined as data field	
+	- sclt  	  [I, J, T]   		 	 
+
+
+- Questions:
+	- @Carlos: Can the 6 consume_functors be collapsed to one functor (reduction??)
+		- Note: consume-flux is unrolled to 6 loops due to different 			indices in arrays: vt and kh
+	- @Yashiro: d is the third dimension in vt, but fourth 
+				dimension in coef_intp	
+
+	-----
+	- i,j,k reference inside DO function
+	- implement cycle for data field
+	- data field (single dimenion)
+
+Notes:
+ - The halo should be adjusted to account for dependencies.
+ 	- see .dot file
+ 	- a double halo layer is required for each two-level nested dependency
+ 	- the programmer computes that himself
+ 		- either abstract it in GridTools, or build the d-graph and expose it to programmer
+ 	- Example:
+ 	i- for maxLength=16 dscl(13)= dscl(flux(14)) = dscl(flux(vt(15))) = dscl(flux(vt(scl(15)))) 	
+ 	ii- for maxLength=16 dscl(13)= dscl(flux(14)) = dscl(flux(vt(15))) = dscl(flux(vt(cinterp_TN(15)))) 	
+ 	- So in total, the domain should be (i-2,j-2,i+1,j+1)
+ 	      

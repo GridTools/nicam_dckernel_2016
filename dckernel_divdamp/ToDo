@@ -1,0 +1,106 @@
+**** PROJECT ***
+- Initial data from Fortran binary files:
+	1- Write a Fortran prorgam and use same compiler that was used to write the binray files
+	2- Read the Fortran binary
+	3- Pass the data to C++ (via pointers)
+	4- Verify that the data is correct
+	5- From C++, the pointers will be used to build storage identifiers
+- Pentagons
+	1- Define interface for this specifc case
+- NICAM uses a cartesian  stencil and Icosehedral domain decomposition
+- Use GridTools for cartesian stencils and use NICAM for the Icosehedral domain decomposition
+- 
+
+**** C++ CODE ***
+- Continue porting in mod_misc starting from "subroutine MISC_make_idstr"
+- Make sure all loops start from zero-base 
+
+
+
+**** GridTools ***
+
+Diffusion benchmark
+  laplace functor
+  - vxt [I, J, T]          3 dimensions [L] defined as data field
+  - vyt [I, J, T]          3 dimensions [L] defined as data field
+  - vzt [I, J, T]          3 dimensions [L] defined as data field
+  - scl [I, J, K]        3 dimensions [L] defined as data field
+  - cinterp_TN  [I, J, A, C]   4 dimensions [L] defined as data field
+  - cinterp_TRA [I, J, T]    3 dimensions [L] defined as data field 
+
+- if there are dependinces in I or J, make a new functor (struct)
+
+
+- Feedback
+  - Why assume vertical dependency
+  - If a single splitter, why define a interval
+  - why assume forward/backward
+  - why use accessor then define a placeholder
+  - halo-function is complicated
+  - why need a "steady" function
+  - Should loops wrap DO functions or be inlined
+  - A higher level of abstraction in GridTools
+    - Represent operations and dependencies
+
+  - for an intermediate array, is an accessor specified as inout in both functors? 
+  - placeholders needs to match accessors, what happens when several functors exist?
+  - What happens for boundary layers in vertical direction
+  - does accessor 0 have to be the output?
+  - functor --> functor: add up halo (halo*2)
+  - when an array is 3D, gTools assume (i,j,k), for arrays with no k, add dumby k dimension
+  - no equation for boundary condition functor (only set to a value)
+    - limitation?
+    - Use a name different from DataField
+  -halo_descriptor
+    - why dfine the padding
+    
+
+- Building  
+
+  - Build on greina
+  	- Add files to ~/gridtools/examples folder
+    - Edit ~/gridtools/examples/CMakeLists.txt to add:
+  			add_executable(vanilla_nicam  gTools.cpp)
+  			set_target_properties(vanilla_nicam PROPERTIES COMPILE_FLAGS ${ADDITIONAL_CXX_FLAGS})
+  target_link_libraries(vanilla_nicam ${exe_LIBS} gcl ${ADD_MPI_LIBS} ${MPI_ADDITIONAL_LIBS})
+  	- module load cuda80/8.0.44
+  	- module load CMake/3.4.1-GCC-4.9.2
+  	- module load
+    - cd gridtools/build
+    - make vanilla_nicam
+
+  	**** GridTools [MeteoSwiss Visit]***
+  	- add vt and flux as temp_storage
+  		- do not pass there palace_holders to the function
+  	- add cache<> (see examples) to the temp. arrays
+  	- Put l loop outside DO function
+  	- Add sperate DO function for flux
+  	- Make sure all offset are correct
+  	- Adjust the layout_map such thah the unit stride is k  (example I,J,K,T ---> K,I,J,T)
+  	- Don't assume vxt, vyt, vzt to be the same code, and if they are the same code, write them excplicity (i.e. manual unroll-like)
+  	- Pentagon ?
+  	- Different nstart, how to handle that?
+  		- just adjust halo
+  	- Pass variable to DO function (l_iterator)
+  		- How to reference the index of the external loop?
+  		- datafield (shallowwaters example)
+  	- Use serializer (available on github)
+  	- if you fuse temps, the halo points are picked up by gtools (union of halo)
+
+- Running on GPU (@greina)
+  - salloc --gres=gpu:1 -p ivybridge
+  - srun ./build/vanilla_nicam_cuda 
+    - add cuda-gdb to debug
+
+*** NOTES on BENCHMARK2016 ***
+
+- diff benchmark
+  - Take array "vt" for example
+  - set the extent to correspond to imin,  imax, jmin, jmax
+  - typedef accessor<0, enumtype::inout, extent<0,-1,0,-1>, 5 > vt; // means loop from imin-1, jmin-1 to imax, jmax
+    // where imin, jim are offseted by 1 from absolute min
+    // and imax, jmax are offseted by 1 from absolute max
+  - Then set the array size to the acutal size as defined originally
+  -     storage_info_4d_t           metadata_4d(ADM_iacdll,ADM_jall,1,ADM_nxyz,TJ);
+  - What about halo ??
+
